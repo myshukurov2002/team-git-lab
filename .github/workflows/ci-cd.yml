@@ -1,0 +1,70 @@
+name: Spring Boot CI/CD
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Kodni yuklab olish
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. Java o'rnatish
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      # 3. Maven build va test
+      - name: Build with Maven
+        run: mvn clean install
+
+      # 4. Testlarni ishga tushirish
+      - name: Run tests
+        run: mvn test
+
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    needs: build-test
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 1. Java o'rnatish
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
+      # 2. Serverga deploy qilish (scp orqali)
+      - name: Deploy to Remote Server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASS }}
+          source: "target/*.jar"
+          target: "/home/${{ secrets.SERVER_USER }}/app"
+
+      # 3. Serverda jar faylini ishga tushirish
+      - name: Restart App on Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_PASS }}
+          script: |
+            pkill -f 'java -jar' || true
+            nohup java -jar /home/${{ secrets.SERVER_USER }}/app/*.jar > log.txt 2>&1 &

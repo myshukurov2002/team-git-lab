@@ -1,4 +1,4 @@
-# 🚀 Advanced Git & GitHub
+   # 🚀 Advanced Git & GitHub
 
 Bu kurs orqali siz Git va GitHub'ni professional darajada o'rganasiz va real proyektlarda ishlay olasiz.
 
